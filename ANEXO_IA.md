@@ -2,9 +2,6 @@
 
 ## A.1 Ferramentas usadas
 
-- ChatGPT (Codex) foi usado para redigir a primeira versão da análise PEAS,
-  estruturar os módulos de busca, busca local, regras e Bayes, integrar os
-  resultados e revisar os cálculos deste repositório.
 - Python 3.12 foi usado para executar `src/main.py`, gerar os arquivos de
   resultados e medir as buscas em grades crescentes. O experimento de
   escalabilidade encerrou processos que ultrapassaram 60 segundos.
