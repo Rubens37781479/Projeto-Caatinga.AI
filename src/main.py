@@ -7,15 +7,17 @@ import json
 import sys
 from pathlib import Path
 
+# Ao executar `python src/main.py`, o diretório inicial do Python é `src/`.
+RAIZ = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(RAIZ))
+
 from src.bayes import carga_falsos_alertas, valor_preditivo_positivo
 from src.busca_local import resumo_execucoes
 from src.buscas import ORDEM_VIZINHOS, astar, bfs, dfs, manhattan, ucs
 from src.especialista import encadeamento_para_tras
 from src.gerador_pomar import gerar_pomar, parametros_sensor
 
-RAIZ = Path(__file__).resolve().parents[1]
 PASTA_RESULTADOS = RAIZ / "resultados"
-OBJETIVO = (11, 11)
 
 
 def _formatar_rota(caminho):
@@ -40,7 +42,7 @@ def executar(matricula: int) -> dict:
         astar(grade, lambda a, b: 4 * manhattan(a, b), nome="A*"),
     ]
     linhas = []
-    for resultado, heuristica in zip(estrategias, ("—", "—", "—", "h1=0", "h2=Manhattan", "h3=4xManhattan")):
+    for resultado, heuristica in zip(estrategias, ("n/a", "n/a", "n/a", "h1=0", "h2=Manhattan", "h3=4xManhattan")):
         linhas.append({
             "estrategia": resultado.estrategia,
             "heuristica": heuristica,
@@ -72,7 +74,7 @@ def executar(matricula: int) -> dict:
 
     resumo_local = resumo_execucoes(grade, repeticoes=30, k=15, semente_base=matricula % 1_000_000)
     with (PASTA_RESULTADOS / "busca_local.csv").open("w", newline="", encoding="utf-8") as arquivo:
-        campos = ("algoritmo", "repeticao", "semente", "valor", "iteracoes", "talhoes")
+        campos = ("algoritmo", "repeticao", "semente", "valor", "iteracoes", "pioras_aceitas", "talhoes")
         writer = csv.DictWriter(arquivo, fieldnames=campos)
         writer.writeheader()
         for algoritmo, resumo in resumo_local.items():
@@ -83,6 +85,7 @@ def executar(matricula: int) -> dict:
                     "semente": resultado.semente,
                     "valor": round(resultado.valor, 6),
                     "iteracoes": resultado.iteracoes,
+                    "pioras_aceitas": resultado.pioras_aceitas,
                     "talhoes": _formatar_rota(sorted(resultado.estado)),
                 })
 

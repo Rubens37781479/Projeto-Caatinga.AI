@@ -18,6 +18,7 @@ class ResultadoLocal:
     valor: float
     estado: EstadoLocal
     iteracoes: int
+    pioras_aceitas: int = 0
 
 
 def _candidatos(grade):
@@ -54,14 +55,12 @@ def _valor(estado: EstadoLocal, riscos: dict[tuple[int, int], float], limite_min
 def _inicializar(candidatos, riscos, k, limite, rng):
     escolhidos = set()
     for posicao in sorted(candidatos, key=lambda p: (-(riscos[p] + rng.random() * 0.1), p)):
-        escolhidos.add(posicao)
+        proposta = escolhidos | {posicao}
+        if _valor(frozenset(proposta), riscos, limite) != -math.inf:
+            escolhidos = proposta
         if len(escolhidos) == k:
-            if _valor(frozenset(escolhidos), riscos, limite) != -math.inf:
-                return frozenset(escolhidos)
-            escolhidos.remove(posicao)
-    if len(escolhidos) < k:
-        raise ValueError("Não há talhões livres suficientes para escolher K.")
-    return frozenset(escolhidos)
+            return frozenset(escolhidos)
+    raise ValueError("Não foi possível inicializar K talhões dentro do limite de bateria.")
 
 
 def _vizinho(estado, candidatos, rng):
@@ -112,18 +111,21 @@ def tempera_simulada(
     melhor, melhor_valor = estado, valor
     temperatura = temperatura_inicial
     iteracoes = 0
+    pioras_aceitas = 0
     for iteracoes in range(1, max_iteracoes + 1):
         candidato = _vizinho(estado, candidatos, rng)
         valor_candidato = _valor(candidato, riscos, limite_minutos)
         diferenca = valor_candidato - valor
         if diferenca >= 0 or (valor_candidato != -math.inf and rng.random() < math.exp(diferenca / temperatura)):
+            if diferenca < 0:
+                pioras_aceitas += 1
             estado, valor = candidato, valor_candidato
         if valor > melhor_valor:
             melhor, melhor_valor = estado, valor
         temperatura *= resfriamento
         if temperatura < 1e-5:
             break
-    return ResultadoLocal("tempera_simulada", semente, melhor_valor, melhor, iteracoes)
+    return ResultadoLocal("tempera_simulada", semente, melhor_valor, melhor, iteracoes, pioras_aceitas)
 
 
 def resumo_execucoes(grade, repeticoes=30, k=15, semente_base=0):

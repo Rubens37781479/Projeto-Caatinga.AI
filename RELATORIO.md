@@ -65,8 +65,161 @@ operacional definido pela cooperativa, em vez de premiar a quantidade bruta de
 alertas. Assim, o desempenho reconhece detecções úteis e torna visível o custo
 dos alertas incorretos.
 
-## Próximas seções
+## Semente e parâmetros usados nos experimentos
 
-As Partes 2 a 5 serão adicionadas após a implementação e execução com a
-matrícula-semente real. A Parte 6 (anexo de uso de IA) será registrada com os
-prompts e respostas efetivamente usados durante o trabalho.
+Semente informada: **24114031** (matrícula `241.14.031`, lida do endereço
+fornecido). A segunda pessoa da dupla ainda não foi identificada. Pomar gerado:
+12 × 12, com 144 posições possíveis, das quais 124 são livres. Parâmetros do
+sensor: prevalência 0,0236; sensibilidade 0,99; taxa de falso positivo 0,03;
+1.200 talhões por semana.
+
+## Parte 2 — Formulação e busca cega
+
+### 2.1 Formulação
+
+- **Estado inicial:** posição (0, 0).
+- **Ações:** mover uma célula para Norte, Sul, Oeste ou Leste, se a posição de
+  destino estiver dentro da grade e não for bloqueada.
+- **Modelo de transição:** a ação move o agente para a célula vizinha escolhida;
+  o mapa não muda.
+- **Teste de objetivo:** posição atual igual a (11, 11).
+- **Custo do caminho:** soma dos custos das células de destino de cada movimento;
+  a célula inicial não é cobrada.
+
+O estado de busca é a coordenada do agente. A codificação tem `12 × 12 = 144`
+coordenadas possíveis; 20 células bloqueadas não são estados transitáveis, então
+há 124 posições livres neste pomar. Os custos 1 e 4 ficam nas transições, não
+fazem parte da identidade do estado.
+
+### 2.2 Resultados das buscas cegas
+
+Ordem dos vizinhos em todas as estratégias: **Norte, Sul, Oeste, Leste**. Nós
+expandidos contam estados removidos da fronteira e expandidos; o objetivo é
+testado na geração do sucessor. A fronteira máxima é o maior tamanho observado
+após uma expansão.
+
+| Estratégia | Custo (unid. de custo) | Passos (movimentos) | Nós expandidos | Fronteira máx. (nós) | Ótima em custo? |
+|---|---:|---:|---:|---:|---|
+| BFS | 49 | 22 | 122 | 10 | Não |
+| DFS | 135 | 54 | 63 | 38 | Não |
+| UCS | 34 | 22 | 119 | 16 | Sim |
+
+### 2.3 Por que a BFS é mais cara
+
+A BFS devolve 22 movimentos, o menor número possível, mas custa 49 unidades;
+a UCS custa 34. Isso não é bug: a BFS minimiza a quantidade de passos e só
+minimiza custo quando cada ação tem o mesmo custo. A hipótese de **custo
+uniforme por passo** foi violada: entrar em `.` custa 1 e entrar em `~` custa 4.
+Por isso, uma rota com o mesmo número de movimentos pode ter custo maior.
+
+### 2.4 Escalabilidade
+
+O experimento isolou cada execução e interrompeu a primeira que excedeu 60 s.
+As três estratégias concluíram em `n = 3200`; em `n = 6400`, a BFS excedeu o
+limite de 60 s. A fronteira máxima da BFS em `n = 3200` foi 2.873 e ela expandiu
+8.177.392 nós em cerca de 19,16 s. Registro completo: `resultados/limites.csv`.
+
+| n | BFS | DFS | UCS |
+|---:|---|---|---|
+| 12 | concluiu (122 expandidos) | concluiu (63) | concluiu (119) |
+| 40 | concluiu (1.289) | concluiu (793) | concluiu (1.287) |
+| 100 | concluiu (7.972) | concluiu (3.314) | concluiu (7.968) |
+| 200 | concluiu (31.890) | concluiu (16.924) | concluiu (31.890) |
+| 400 | concluiu (127.569) | concluiu (69.144) | concluiu (127.570) |
+| 800 | concluiu (510.712) | concluiu (256.473) | concluiu (510.710) |
+| 1200 | concluiu (1.149.381) | concluiu (582.186) | concluiu (1.149.379) |
+| 1600 | concluiu (2.043.695) | concluiu (1.003.532) | concluiu (2.043.696) |
+| 3200 | concluiu (8.177.392) | concluiu (4.081.366) | concluiu (8.177.385) |
+| 6400 | **BFS: tempo > 60 s** | não executada após a falha | não executada após a falha |
+
+Na grade, há `V = n²` posições e até `E ≤ 4n²` transições dirigidas. Busca em
+grafo mantém estados visitados e predecessores; portanto, o limite assintótico
+de tempo e memória é `O(V + E) = O(n²)` para BFS/DFS. Para UCS, a fila de
+prioridade acrescenta o fator de ordenação, ficando `O((V + E) log V)` no
+limite usual. Dobrar n quadruplica V. De `n=3200` para `n=6400`, isso projeta
+cerca de 32,7 milhões de expansões; a execução medida da BFS ultrapassou 60 s
+antes de concluir. O experimento confirma o crescimento de estados e o limite
+de tempo, não uma falha de pilha.
+
+## Parte 3 — Busca informada
+
+### 3.1 e 3.2 Heurísticas e admissibilidade
+
+| Heurística | Custo (unid. de custo) | Nós expandidos | Admissível? |
+|---|---:|---:|---|
+| h1 = 0 | 34 | 119 | Sim; nunca supera o custo restante não negativo. |
+| h2 = Manhattan | 34 | 94 | Sim; prova abaixo. |
+| h3 = 4 × Manhattan | 40 | 31 | Não; contraexemplo abaixo. |
+
+Uma ação muda uma coordenada em uma unidade e custa no mínimo 1 para entrar no
+próximo talhão. Logo, qualquer caminho restante precisa de ao menos a distância
+Manhattan em movimentos e custa pelo menos essa distância. Bloqueios podem
+alongar a rota, nunca encurtá-la. Portanto `h2(n) ≤ custo_real(n, objetivo)`.
+
+No par concreto `(0, 0)` → `(11, 11)`, a heurística h3 estima
+`4 × (11 + 11) = 88`, enquanto a rota de custo mínimo restante medida pela UCS
+custa 34. Como `88 > 34`, h3 superestima e não é admissível.
+
+### 3.3 Custo de velocidade
+
+O custo de h3 foi 40, contra 34 da UCS: a perda percentual é
+`(40 − 34) / 34 × 100 = 17,65%`. Em troca, h3 expandiu 31 nós, 88 a menos que a
+UCS (119), e 63 a menos que h2 (94). Na execução medida, o A* com h3 levou
+0,096 ms, contra 0,297 ms da UCS; tempos variam por máquina e carga.
+
+Uma condição verificável para aceitar a troca seria a cooperativa fixar um
+limite de custo de rota igual ou superior a 40 e um prazo rígido de planejamento
+menor que 0,1 ms por consulta na máquina de produção. Se uma avaliação
+representativa mostrar que h2 não atende esse prazo e h3 atende, a redução de
+latência pode justificar a perda de 17,65% nesse pomar. Sem esse limite e essa
+medição, a solução ótima da UCS/h2 é preferível.
+
+### 3.4 Busca local
+
+Estado: conjunto de 15 talhões livres. Um vizinho troca um talhão selecionado por
+outro livre. Para tornar o exercício executável sem rótulos reais de praga, o
+valor usa pesos de risco sintéticos uniformes em `[0, 1)`, gerados por sementes
+reprodutíveis; o objetivo maximiza a soma desses pesos. A duração estimada é
+12 minutos por inspeção mais 3 minutos por passo da rota gulosa entre os
+talhões e o ponto de coleta, sujeita ao limite de 360 minutos. Os três minutos
+por movimento são uma hipótese explícita do modelo local, pois o enunciado não
+fornece duração de deslocamento.
+
+Foram executadas 30 sementes por algoritmo. O desvio é populacional.
+
+| Algoritmo | Média (pontos de utilidade) | Desvio padrão (pontos) | Melhor (pontos) |
+|---|---:|---:|---:|
+| Subida de encosta | 14,0473 | 0,2825 | 14,5182 |
+| Têmpera simulada | 14,1039 | 0,2661 | 14,5182 |
+
+A têmpera aceitou uma troca que reduzia temporariamente o valor em todas as
+30 execuções: 733 pioras aceitas ao todo (média de 24,43 por rodada). A subida
+de encosta aceitou zero. Os contadores por rodada estão em
+`resultados/busca_local.csv`. Aceitar piora permite sair de máximos locais; nos
+resultados, a têmpera teve média maior, embora os dois métodos tenham encontrado
+o mesmo melhor valor. Os pesos são uma simulação para comparar algoritmos, não
+medições de infestação real.
+
+### Bônus — Liga de IA: contraexemplo para DFS
+
+Pomar construído manualmente (8 × 8), com a mesma ordem de vizinhos. `#` é
+bloqueado, `~` custa 4 e `.` custa 1:
+
+```text
+........
+~######.
+~~~~~~#.
+#####~#.
+~~~~~~#.
+~######.
+~~~~~~#.
+#####~~.
+```
+
+DFS retornou o caminho
+`(0,0)→(1,0)→(2,0)→(2,1)→(2,2)→(2,3)→(2,4)→(2,5)→(3,5)→(4,5)→(4,4)→(4,3)→(4,2)→(4,1)→(4,0)→(5,0)→(6,0)→(6,1)→(6,2)→(6,3)→(6,4)→(6,5)→(7,5)→(7,6)→(7,7)`, com 24 movimentos e custo **93**. UCS encontrou a rota pelo topo e pela coluna da direita, com 14 movimentos e custo ótimo **14**. A rota da DFS custa mais de seis vezes o ótimo (`93 / 14 ≈ 6,64`).
+
+## Partes 4 e 5
+
+Os cálculos de Bayes, as regras com rastreamento e a auditoria do laudo serão
+acrescentados na próxima etapa, com base nos artefatos gerados pelo programa.
