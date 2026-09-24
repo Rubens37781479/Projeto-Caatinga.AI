@@ -106,6 +106,7 @@ def bfs(grade: Grade, inicio: Estado = (0, 0), objetivo: Estado | None = None) -
                 continue
             pais[proximo] = atual
             if proximo == objetivo:  # teste na geração do sucessor
+                max_fronteira = max(max_fronteira, len(fronteira))
                 return _resultado("BFS", _reconstruir(pais, proximo), grade, expandidos, max_fronteira, inicio_tempo)
             fronteira.append(proximo)
         max_fronteira = max(max_fronteira, len(fronteira))
@@ -132,6 +133,7 @@ def dfs(grade: Grade, inicio: Estado = (0, 0), objetivo: Estado | None = None) -
                 continue
             pais[proximo] = atual
             if proximo == objetivo:
+                max_fronteira = max(max_fronteira, len(fronteira))
                 return _resultado("DFS", _reconstruir(pais, proximo), grade, expandidos, max_fronteira, inicio_tempo)
             fronteira.append(proximo)
         max_fronteira = max(max_fronteira, len(fronteira))

@@ -132,14 +132,16 @@ limite de 60 s. A fronteira máxima da BFS em `n = 3200` foi 2.873 e ela expandi
 | 3200 | concluiu (8.177.392) | concluiu (4.081.366) | concluiu (8.177.385) |
 | 6400 | **BFS: tempo > 60 s** | não executada após a falha | não executada após a falha |
 
-Na grade, há `V = n²` posições e até `E ≤ 4n²` transições dirigidas. Busca em
-grafo mantém estados visitados e predecessores; portanto, o limite assintótico
-de tempo e memória é `O(V + E) = O(n²)` para BFS/DFS. Para UCS, a fila de
-prioridade acrescenta o fator de ordenação, ficando `O((V + E) log V)` no
-limite usual. Dobrar n quadruplica V. De `n=3200` para `n=6400`, isso projeta
-cerca de 32,7 milhões de expansões; a execução medida da BFS ultrapassou 60 s
-antes de concluir. O experimento confirma o crescimento de estados e o limite
-de tempo, não uma falha de pilha.
+Na grade, há `V = n²` posições e até `E ≤ 4n²` transições dirigidas. Na
+formulação de busca em grafo, BFS/DFS usam `O(V + E)` tempo e `O(V)` memória;
+UCS acrescenta o fator da fila de prioridade, `O((V + E) log V)` no limite
+usual. Dobrar n quadruplica V. Nesta implementação, a fila da BFS usa uma lista
+Python com `pop(0)`, que desloca os elementos restantes; seu custo real inclui
+`Σ |fronteira_t|` e pode chegar a `O(V × W)`, onde W é a largura da fronteira
+(até `O(n)` nesta grade). De `n=3200` para `n=6400`, isso pode multiplicar o
+trabalho por cerca de oito, além de quadruplicar os estados. A execução medida
+da BFS ultrapassou 60 s antes de concluir. O experimento confirma o crescimento
+de estados e o limite de tempo, não uma falha de pilha.
 
 ## Parte 3 — Busca informada
 
@@ -165,14 +167,15 @@ custa 34. Como `88 > 34`, h3 superestima e não é admissível.
 O custo de h3 foi 40, contra 34 da UCS: a perda percentual é
 `(40 − 34) / 34 × 100 = 17,65%`. Em troca, h3 expandiu 31 nós, 88 a menos que a
 UCS (119), e 63 a menos que h2 (94). Na execução medida, o A* com h3 levou
-0,096 ms, contra 0,297 ms da UCS; tempos variam por máquina e carga.
+0,075 ms, contra 0,229 ms da UCS; tempos variam por máquina e carga.
 
 Uma condição verificável para aceitar a troca seria a cooperativa fixar um
 limite de custo de rota igual ou superior a 40 e um prazo rígido de planejamento
-menor que 0,1 ms por consulta na máquina de produção. Se uma avaliação
-representativa mostrar que h2 não atende esse prazo e h3 atende, a redução de
-latência pode justificar a perda de 17,65% nesse pomar. Sem esse limite e essa
-medição, a solução ótima da UCS/h2 é preferível.
+menor que 0,1 ms por consulta na máquina de produção. Nesta execução, h3 mediu
+0,075 ms e h2 0,190 ms; se uma avaliação representativa na máquina de produção
+confirmar que h2 não atende esse prazo e h3 atende, a redução de latência pode
+justificar a perda de 17,65% neste pomar. Sem esse limite e essa medição, a
+solução ótima da UCS/h2 é preferível.
 
 ### 3.4 Busca local
 
@@ -221,5 +224,92 @@ DFS retornou o caminho
 
 ## Partes 4 e 5
 
-Os cálculos de Bayes, as regras com rastreamento e a auditoria do laudo serão
-acrescentados na próxima etapa, com base nos artefatos gerados pelo programa.
+### Parte 4 — Regras e incerteza
+
+Parâmetros da matrícula-semente: prevalência `0,0236`, sensibilidade `0,99`,
+taxa de falso positivo `0,03` e 1.200 talhões por semana.
+
+#### 4.1 Mini sistema especialista
+
+As regras implementadas são:
+
+1. SE `sensor_positivo` E `risco_alto`, ENTÃO `inspecionar_prioridade_alta` (R1).
+2. SE `sensor_positivo` E `umidade_alta` E `pulverizacao_antiga`, ENTÃO `risco_alto` (R2).
+3. SE `armadilha_positiva` E `fruto_danificado`, ENTÃO `risco_alto` (R3).
+4. SE `sensor_positivo` E `umidade_alta`, ENTÃO `inspecionar_prioridade_media` (R4).
+5. SE `sensor_negativo` E `fruto_saudavel`, ENTÃO `monitorar_rotina` (R5).
+6. SE `pulverizacao_recente` E `sensor_positivo`, ENTÃO `revisar_alerta` (R6).
+7. SE `infestacao_confirmada`, ENTÃO `manejo_conforme_protocolo` (R7).
+
+Com os fatos `sensor_positivo`, `umidade_alta` e `pulverizacao_antiga`, o
+encadeamento para trás prova a prioridade alta pela cadeia **R2 → R1**. O
+programa grava os fatos consultados e as regras usadas em `resultados/resumo.json`
+e imprime a cadeia no terminal.
+
+#### 4.2 Caso que quebra a base e correção
+
+Caso: o sensor dá positivo logo após uma pulverização recente, enquanto a
+umidade está alta. Sem tratamento de conflito, R4 prova
+`inspecionar_prioridade_media` usando apenas `sensor_positivo` e `umidade_alta`,
+ignorando que o resíduo da pulverização pode explicar o sinal. O traço da base
+sem prioridade é `sensor_positivo`, `umidade_alta` → **R4** → inspeção média.
+
+A correção dá precedência à R6: quando há `pulverizacao_recente` e
+`sensor_positivo`, a decisão passa a `revisar_alerta`; o traço é
+`pulverizacao_recente`, `sensor_positivo` → **R6** → revisão. A regra R4 continua
+válida para o caso sem pulverização recente, portanto a exceção não contradiz a
+base; `decidir_manejo` explicita essa prioridade.
+
+#### 4.3 Cálculos de Bayes
+
+**(a)** Pelo teorema de Bayes:
+
+```text
+P(infestado | positivo)
+ = (0,0236 × 0,99) / [(0,0236 × 0,99) + (1 − 0,0236) × 0,03]
+ = 0,023364 / (0,023364 + 0,029292)
+ = 0,44371 ≈ 44,37%
+```
+
+**(b)** A cada 100 alertas positivos, cerca de **55,63** são falsos
+(`100 × (1 − 0,44371)`).
+
+**(c)** Em 1.200 testes por semana, alertas falsos esperados:
+`1200 × (1 − 0,0236) × 0,03 = 35,1504`. A 12 minutos por inspeção, são
+`35,1504 × 12 / 60 = 7,03008 horas` por semana.
+
+**(d)** Elevando a sensibilidade para `0,999` e mantendo a taxa de falso positivo:
+
+```text
+VPP = (0,0236 × 0,999) / [(0,0236 × 0,999) + (1 − 0,0236) × 0,03]
+    = 0,445945 ≈ 44,59%
+```
+
+O ganho é só cerca de **0,22 ponto percentual** frente a 44,37%. Para melhorar
+de fato a proporção de alertas corretos, a cooperativa deve reduzir a taxa de
+falso positivo: com prevalência baixa, os falsos positivos de uma população
+grande de talhões não infestados dominam o denominador.
+
+#### 4.4 Regra explícita
+
+A aplicação de defensivo deve exigir confirmação e protocolo aprovados por um
+agrônomo responsável. Essa decisão deve ser uma regra explícita e auditável:
+um modelo aprendido não deve autorizar sozinho uma ação química com impacto
+ambiental, econômico e de responsabilidade profissional.
+
+### Parte 5 — Auditoria do laudo do fornecedor
+
+| Afirmação | Veredito | Fundamentação e evidência medida |
+|---|---|---|
+| 1. A* com Manhattan × 4 é sempre ótimo. | **Incorreta** | h3 não é admissível: no par `(0,0)` → `(11,11)`, estima 88 para um custo restante ótimo de 34. No pomar da dupla, o A* h3 devolveu custo 40; a UCS encontrou 34. Ser A* não garante otimalidade para qualquer heurística. |
+| 2. BFS → A* reduziu custo em 38%, provando que a heurística melhora a solução. | **Parcialmente correta** | Neste pomar, BFS custa 49 e A* h2 custa 34, queda de `(49−34)/49 = 30,61%`, não 38%. A* h2 expandiu 94 nós, contra 122 da BFS. A rota melhorou em custo neste exemplo, mas isso não prova que qualquer heurística melhora a qualidade; h3 expandiu só 31 nós e devolveu custo 40. |
+| 3. Sensibilidade de 99% significa que 99% dos alertas estão infestados. | **Incorreta** | Confunde sensibilidade com valor preditivo positivo. Com os parâmetros da dupla, o VPP é 44,37%; aproximadamente 55,63 de cada 100 alertas são falsos. |
+| 4. Dois positivos fazem a confiança passar de 99%. | **Incorreta** | Mesmo assumindo independência condicional dos dois testes, o VPP calculado é 96,34%, abaixo de 99%. O enunciado do fornecedor também não demonstra essa independência; testes repetidos podem compartilhar as mesmas condições de erro. |
+| 5. DFS usa menos memória e basta porque o pomar é estático e totalmente observável. | **Parcialmente correta** | DFS pode usar menos memória de fronteira que BFS em certas árvores, mas neste pomar a fronteira máxima da DFS foi 38 e a da BFS 10; DFS devolveu custo 135 contra 34 da UCS. Além disso, estático/observável não implica solução ótima, os custos de entrada não são uniformes e o estado real das pragas não é revelado perfeitamente pelo sensor. |
+
+**Recomendação à diretoria:** recusar o laudo como está. A proposta usa uma
+heurística que perdeu 17,65% de custo neste pomar e interpreta sensibilidade
+como precisão dos alertas. Reavaliar a contratação se o fornecedor demonstrar,
+com a prevalência local e testes independentes, um VPP e uma taxa de falsos
+positivos compatíveis com a capacidade semanal dos agrônomos, e se oferecer um
+planejador com limite de custo verificável.

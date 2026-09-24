@@ -52,3 +52,21 @@ def encadeamento_para_tras(meta: str, fatos: set[str] | frozenset[str]):
 
     sucesso = provar(meta)
     return {"meta": meta, "provada": sucesso, "regras": regras_usadas, "consultas": consultados}
+
+
+def decidir_manejo(fatos: set[str] | frozenset[str]):
+    """Aplica prioridade explícita para não tratar leitura pós-pulverização como alerta novo."""
+    fatos = set(fatos)
+    if "sensor_positivo" in fatos and "pulverizacao_recente" in fatos:
+        meta = "revisar_alerta"
+    elif "infestacao_confirmada" in fatos:
+        meta = "manejo_conforme_protocolo"
+    elif {"sensor_positivo", "umidade_alta", "pulverizacao_antiga"} <= fatos:
+        meta = "inspecionar_prioridade_alta"
+    elif {"sensor_positivo", "umidade_alta"} <= fatos:
+        meta = "inspecionar_prioridade_media"
+    elif {"sensor_negativo", "fruto_saudavel"} <= fatos:
+        meta = "monitorar_rotina"
+    else:
+        meta = "revisar_alerta"
+    return encadeamento_para_tras(meta, fatos)

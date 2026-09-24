@@ -11,10 +11,10 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src.bayes import carga_falsos_alertas, valor_preditivo_positivo
+from src.bayes import carga_falsos_alertas, valor_preditivo_dois_positivos, valor_preditivo_positivo
 from src.busca_local import resumo_execucoes
 from src.buscas import ORDEM_VIZINHOS, astar, bfs, dfs, manhattan, ucs
-from src.especialista import encadeamento_para_tras
+from src.especialista import decidir_manejo, encadeamento_para_tras
 from src.gerador_pomar import gerar_pomar, parametros_sensor
 
 PASTA_RESULTADOS = RAIZ / "resultados"
@@ -108,12 +108,26 @@ def executar(matricula: int) -> dict:
         "espaco_estados": len(grade) * len(grade[0]),
         "talhoes_livres": sum(c != "#" for linha in grade for c in linha),
         "sensor": sensor,
-        "bayes": {**bayes, "vpp_sensibilidade_999": vpp_sensibilidade_999},
+        "bayes": {
+            **bayes,
+            "vpp_sensibilidade_999": vpp_sensibilidade_999,
+            "vpp_dois_positivos_independentes": valor_preditivo_dois_positivos(
+                sensor["prevalencia"], sensor["sensibilidade"], sensor["taxa_falso_positivo"],
+            ),
+        },
         "busca_local": {
             nome: {"media": resumo["media"], "desvio_populacional": resumo["desvio_populacional"], "melhor": resumo["melhor"]}
             for nome, resumo in resumo_local.items()
         },
         "cadeia_especialista_exemplo": especialista,
+        "caso_regra_excecao": {
+            "regra_base_sem_prioridade": encadeamento_para_tras(
+                "inspecionar_prioridade_media", {"sensor_positivo", "umidade_alta", "pulverizacao_recente"},
+            ),
+            "decisao_com_excecao": decidir_manejo(
+                {"sensor_positivo", "umidade_alta", "pulverizacao_recente"},
+            ),
+        },
         "rotas": {f"{r.estrategia}_{i}": {"custo": r.custo, "passos": r.passos, "caminho": r.caminho}
                   for i, r in enumerate(estrategias)},
         "resultados": linhas,
@@ -124,6 +138,7 @@ def executar(matricula: int) -> dict:
     for linha in linhas:
         print("{estrategia:4} {heuristica:15} custo={custo:3} passos={passos:3} expandidos={nos_expandidos:4} fronteira={fronteira_max:4}".format(**linha))
     print(f"Ordem de vizinhos: {', '.join(ORDEM_VIZINHOS and ['Norte', 'Sul', 'Oeste', 'Leste'])}")
+    print(f"Cadeia especialista: {' -> '.join(especialista['regras'])} -> {especialista['meta']}")
     return dados
 
 
