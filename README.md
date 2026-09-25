@@ -1,5 +1,9 @@
 # Caatinga.AI — Sprint 1
 
+## Prompts 
+
+-Codex: auxílio na compreensão do enunciado, formulação das buscas BFS/DFS/UCS/A*, auxilio na correção de erros dentro do codigo. 
+
 ## Identificação
 
 - Disciplina: Inteligência Artificial — UniRios — 2026.2
