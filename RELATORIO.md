@@ -68,10 +68,11 @@ dos alertas incorretos.
 ## Semente e parâmetros usados nos experimentos
 
 Semente informada: **24114031** (matrícula `241.14.031`, lida do endereço
-fornecido). A segunda pessoa da dupla ainda não foi identificada. Pomar gerado:
-12 × 12, com 144 posições possíveis, das quais 124 são livres. Parâmetros do
-sensor: prevalência 0,0236; sensibilidade 0,99; taxa de falso positivo 0,03;
-1.200 talhões por semana.
+fornecido). A dupla é formada por Rubens Alves de Barros (`241.14.031`) e
+Paloma Graziela Bertoleza Martins (`241.14.078`). Pomar gerado: 12 × 12, com 144
+posições possíveis, das quais 124 são livres. Parâmetros do sensor: prevalência
+0,0236; sensibilidade 0,99; taxa de falso positivo 0,03; 1.200 talhões por
+semana.
 
 ## Parte 2 — Formulação e busca cega
 
