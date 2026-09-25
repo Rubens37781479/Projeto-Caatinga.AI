@@ -3,9 +3,9 @@
 ## Identificação
 
 - Disciplina: Inteligência Artificial — UniRios — 2026.2
-- Integrante 1: Rubens Alves (nome completo a confirmar) — matrícula: 241.14.031
-- Integrante 2: a preencher — nome completo e matrícula pendentes
-- Matrícula-semente (integrante mais velho): 241.14.031 (`24114031` no comando)
+- Integrante 1: Rubens Alves (Rubens Alves de Barros) — matrícula: 241.14.031
+- Integrante 2: Paloma Graziela (Paloma Graziela Bertoleza Martins) - 241.14.078
+- Matrícula-semente (Rubens Alves de Barros): 241.14.031 (`24114031` no comando)
 
 ## O que este projeto faz
 
