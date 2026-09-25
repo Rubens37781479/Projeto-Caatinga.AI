@@ -2,14 +2,23 @@
 
 
 def valor_preditivo_positivo(prevalencia: float, sensibilidade: float, falso_positivo: float) -> float:
-    for nome, valor in (("prevalencia", prevalencia), ("sensibilidade", sensibilidade), ("taxa_falso_positivo", falso_positivo)):
+    """Calcula a chance de um alerta positivo indicar uma infestação real."""
+    valores = (
+        ("prevalencia", prevalencia),
+        ("sensibilidade", sensibilidade),
+        ("taxa_falso_positivo", falso_positivo),
+    )
+    for nome, valor in valores:
         if not 0 <= valor <= 1:
             raise ValueError(f"{nome} deve estar entre 0 e 1.")
+
+    # Alertas verdadeiros + alertas falsos = todos os alertas positivos.
     denominador = prevalencia * sensibilidade + (1 - prevalencia) * falso_positivo
     return 0.0 if denominador == 0 else prevalencia * sensibilidade / denominador
 
 
 def carga_falsos_alertas(prevalencia: float, sensibilidade: float, falso_positivo: float, talhoes_por_semana: int):
+    """Estima falsos alertas por semana e o tempo gasto para inspecioná-los."""
     vpp = valor_preditivo_positivo(prevalencia, sensibilidade, falso_positivo)
     alertas = talhoes_por_semana * (prevalencia * sensibilidade + (1 - prevalencia) * falso_positivo)
     falsos = alertas * (1 - vpp)
@@ -18,7 +27,12 @@ def carga_falsos_alertas(prevalencia: float, sensibilidade: float, falso_positiv
 
 def valor_preditivo_dois_positivos(prevalencia: float, sensibilidade: float, falso_positivo: float) -> float:
     """VPP após dois positivos, assumindo independência condicional dos testes."""
-    for nome, valor in (("prevalencia", prevalencia), ("sensibilidade", sensibilidade), ("taxa_falso_positivo", falso_positivo)):
+    valores = (
+        ("prevalencia", prevalencia),
+        ("sensibilidade", sensibilidade),
+        ("taxa_falso_positivo", falso_positivo),
+    )
+    for nome, valor in valores:
         if not 0 <= valor <= 1:
             raise ValueError(f"{nome} deve estar entre 0 e 1.")
     tp = prevalencia * sensibilidade**2

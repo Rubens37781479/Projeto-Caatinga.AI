@@ -30,7 +30,7 @@ def _distancia(a, b):
 
 
 def _rota_aproximada(estado: EstadoLocal):
-    """Rota gulosa de inspeção, incluindo o trajeto até o ponto de coleta."""
+    """Estima a distância visitando primeiro o talhão livre mais próximo."""
     restantes = set(estado)
     atual = (0, 0)
     passos = 0
@@ -46,6 +46,7 @@ def _rota_aproximada(estado: EstadoLocal):
 
 def _valor(estado: EstadoLocal, riscos: dict[tuple[int, int], float], limite_minutos: float) -> float:
     # 12 min por inspeção de campo e 3 min por passo de deslocamento.
+    # Estados que excedem a bateria recebem valor infinito negativo e são descartados.
     duracao = len(estado) * 12 + _rota_aproximada(estado) * 3
     if duracao > limite_minutos:
         return -math.inf

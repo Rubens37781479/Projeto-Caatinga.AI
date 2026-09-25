@@ -1,50 +1,18 @@
-# Anexo obrigatório — Uso de IA
+# Anexo — Uso de inteligência artificial
 
-## A.1 Ferramentas usadas
+## Ferramentas usadas
 
-- Python 3.12 foi usado para executar `src/main.py`, gerar os arquivos de
-  resultados e medir as buscas em grades crescentes. O experimento de
-  escalabilidade encerrou processos que ultrapassaram 60 segundos.
-- Matplotlib foi usado pelo programa para gerar `resultados/grafico.png`.
+- Python 3.12 foi usado para executar o programa e gerar os resultados.
+- Matplotlib foi usado para criar o gráfico salvo em `resultados/grafico.png`.
+- No experimento de tamanhos maiores, cada execução foi encerrada se passasse de 60 segundos.
 
-## A.2 Prompts e respostas recebidas
 
-### Prompt 1
+## Problema encontrado e correção
 
-> Precisol da sua ajuda para fazer isso aqui porem nao faça tudo faça em partes pois preciso dar 8 commits
+Na primeira versão da busca local, o programa podia escolher 15 talhões cujo tempo total ultrapassava as seis horas de bateria. Ele tentava corrigir isso removendo somente o último talhão e, em alguns casos, parava com um erro.
 
-**Resposta recebida:**
+A correção verifica cada talhão antes de adicioná-lo. Assim, o grupo escolhido sempre respeita o limite de tempo. Depois da correção, `python src/main.py 24114031` terminou e gerou os arquivos de resultados. Nas 30 execuções registradas, a têmpera simulada aceitou 733 mudanças que diminuíram o valor do resultado; a subida de encosta não aceitou nenhuma.
 
-> Vou verificar o PDF para separar o que ele pede do que você pediu: fazer a atividade em etapas e chegar a oito commits. Em seguida, vejo o estado atual do projeto e preparo só a primeira parte.
+## O que aprendi
 
-### Prompt 2
-
-> Pronto pode ir fazendo o resto
-
-**Resposta recebida:**
-
-> Vou continuar pelas partes restantes, separando o trabalho em seis commits para completar os oito. O código pode ficar pronto para qualquer matrícula; para preencher identificação e resultados da dupla sem inventar dados, preciso dos nomes e matrículas dos dois integrantes e de saber qual matrícula é da pessoa mais velha. Enquanto isso, vou implementar as buscas e preparar a estrutura executável.
-
-## A.3 Erro encontrado e evidência
-
-Na primeira versão do módulo de busca local, a inicialização gulosa podia montar
-um conjunto de 15 talhões que ultrapassava a bateria de seis horas. Ao chegar a
-esse conjunto, removia apenas o último talhão e não procurava uma alternativa
-viável; a execução terminava com `ValueError` em `_inicializar`. O erro apareceu
-ao rodar `python src/main.py 24114031`, antes da geração dos resultados da busca
-local.
-
-A inicialização foi corrigida para aceitar uma adição somente quando o conjunto
-parcial respeita o limite de duração. Depois da correção, o mesmo comando
-concluiu as 30 execuções de cada algoritmo e gravou `resultados/busca_local.csv`
-e `resultados/resumo.json`. O CSV mostra 30 rodadas de têmpera simulada com
-pioras aceitas (733 no total) e zero para subida de encosta. Esses arquivos são
-a evidência usada no relatório.
-
-## A.4 O que aprendi executando
-
-Depois de rodar o programa, vi que a têmpera simulada aceitou pioras em todas as
-30 rodadas (733 ao todo), enquanto a subida de encosta não aceitou nenhuma; a
-média de utilidade da têmpera foi 14,1039 e a da subida foi 14,0473. A resposta
-teórica explica por que aceitar pioras pode ajudar, mas só a execução mostrou
-esse comportamento nos dados e sementes deste pomar.
+Nos resultados desta execução, a média de utilidade da têmpera simulada foi 14,1039. A média da subida de encosta foi 14,0473. A têmpera pode aceitar uma escolha pior durante a busca e, com isso, tentar encontrar uma opção melhor mais adiante. Os números descrevem este pomar e estas sementes; eles não garantem o mesmo resultado em outras execuções.

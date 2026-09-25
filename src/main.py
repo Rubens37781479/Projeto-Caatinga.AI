@@ -13,7 +13,7 @@ sys.path.insert(0, str(RAIZ))
 
 from src.bayes import carga_falsos_alertas, valor_preditivo_dois_positivos, valor_preditivo_positivo
 from src.busca_local import resumo_execucoes
-from src.buscas import ORDEM_VIZINHOS, astar, bfs, dfs, manhattan, ucs
+from src.buscas import astar, bfs, dfs, manhattan, ucs
 from src.especialista import decidir_manejo, encadeamento_para_tras
 from src.gerador_pomar import gerar_pomar, parametros_sensor
 
@@ -32,12 +32,13 @@ def executar(matricula: int) -> dict:
         encoding="utf-8",
     )
 
-    zero = lambda _atual, _objetivo: 0
+    # Sem estimativa, o A* se comporta como a busca de custo uniforme.
+    heuristica_zero = lambda _atual, _objetivo: 0
     estrategias = [
         bfs(grade),
         dfs(grade),
         ucs(grade),
-        astar(grade, zero, nome="A*"),
+        astar(grade, heuristica_zero, nome="A*"),
         astar(grade, manhattan, nome="A*"),
         astar(grade, lambda a, b: 4 * manhattan(a, b), nome="A*"),
     ]
@@ -137,7 +138,7 @@ def executar(matricula: int) -> dict:
     print(f"Matrícula-semente: {matricula}")
     for linha in linhas:
         print("{estrategia:4} {heuristica:15} custo={custo:3} passos={passos:3} expandidos={nos_expandidos:4} fronteira={fronteira_max:4}".format(**linha))
-    print(f"Ordem de vizinhos: {', '.join(ORDEM_VIZINHOS and ['Norte', 'Sul', 'Oeste', 'Leste'])}")
+    print("Ordem de vizinhos: Norte, Sul, Oeste, Leste")
     print(f"Cadeia especialista: {' -> '.join(especialista['regras'])} -> {especialista['meta']}")
     return dados
 

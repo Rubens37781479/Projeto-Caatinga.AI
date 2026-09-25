@@ -798,7 +798,7 @@
       "passos": 22,
       "nos_expandidos": 122,
       "fronteira_max": 10,
-      "tempo_ms": 0.138
+      "tempo_ms": 0.171
     },
     {
       "estrategia": "DFS",
@@ -807,7 +807,7 @@
       "passos": 54,
       "nos_expandidos": 63,
       "fronteira_max": 38,
-      "tempo_ms": 0.09
+      "tempo_ms": 0.112
     },
     {
       "estrategia": "UCS",
@@ -816,7 +816,7 @@
       "passos": 22,
       "nos_expandidos": 119,
       "fronteira_max": 16,
-      "tempo_ms": 0.229
+      "tempo_ms": 0.287
     },
     {
       "estrategia": "A*",
@@ -825,7 +825,7 @@
       "passos": 22,
       "nos_expandidos": 119,
       "fronteira_max": 16,
-      "tempo_ms": 0.215
+      "tempo_ms": 0.275
     },
     {
       "estrategia": "A*",
@@ -834,7 +834,7 @@
       "passos": 22,
       "nos_expandidos": 94,
       "fronteira_max": 32,
-      "tempo_ms": 0.19
+      "tempo_ms": 0.241
     },
     {
       "estrategia": "A*",
@@ -843,7 +843,7 @@
       "passos": 22,
       "nos_expandidos": 31,
       "fronteira_max": 27,
-      "tempo_ms": 0.075
+      "tempo_ms": 0.095
     }
   ]
 }
